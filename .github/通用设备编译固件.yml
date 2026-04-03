@@ -1,0 +1,38 @@
+name: Build ImmortalWrt
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses5-dev gawk gettext git subversion libssl-dev libelf-dev
+
+      - name: Clone ImmortalWrt source
+        run: |
+          git clone --depth=1 https://github.com/immortalwrt/immortalwrt.git -b openwrt-23.05
+          cd immortalwrt
+          cp ../config/.config .
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Build firmware
+        run: |
+          cd immortalwrt
+          make defconfig
+          make -j$(nproc) V=s
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-firmware
+          path: |
+            immortalwrt/bin/targets/ramips/mt76x8/*.bin
+            !immortalwrt/bin/targets/ramips/mt76x8/*kernel*.bin
+            !immortalwrt/bin/targets/ramips/mt76x8/*rootfs*.bin
