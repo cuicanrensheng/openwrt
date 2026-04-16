@@ -1,0 +1,10 @@
+files/
+└── etc/
+    ├── config/
+    │   ├── network    # 自定义网络配置（静态IP、DHCP、WAN/LAN设置）
+    │   ├── wireless  # 自定义WiFi配置（SSID、密码、信道、加密方式）
+    │   ├── luci      # LuCI界面配置（主题、语言、登录超时、默认密码）
+    │   └── firewall  # 防火墙规则（端口转发、访问控制）
+    ├── uci-defaults/
+    │   └── 01-custom # 首次开机自动执行脚本（修改密码、安装插件、初始化配置）
+    └── banner       # SSH登录欢迎语（自定义路由器名称）
