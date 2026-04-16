@@ -1,55 +1,55 @@
-name: Build OpenWrt for MiWiFi R4AC
+name: 为MiWiFi R4AC编译OpenWrt
 
-on:
-  workflow_dispatch:
-    inputs:
-      REVISION:
-        description: 'Firmware Version'
-        required: true
-        default: '24.10'
+于:
+工作流_dispatch:
+输入:
+修订版:
+描述: '固件版本'
+必填: 是
+默认: '24.10'
 
-jobs:
-  build-openwrt:
-    runs-on: ubuntu-latest
-    steps:
-      - name: 检出源码
-        uses: actions/checkout@v4
-        with:
+作业:
+构建-openwrt:
+运行于: ubuntu-latest
+步骤:
+      - 名称: 检出源码
+使用: actions/checkout@v4
+使用:
           fetch-depth: 0
 
-      - name: 拉取 OpenWrt 官方源码 (24.10 稳定版)
-        run: |
+      - 名称: 拉取OpenWrt官方源码（24.10稳定版）
+运行: |
           # 拉取官方源码
-          git clone https://github.com/openwrt/openwrt.git     
+git 克隆 https://github.com/openwrt/openwrt.git
           cd openwrt
-          git checkout openwrt-24.10 
+         
           
-          # 复制你的自定义.config 到源码目录
+# 将你的自定义.config复制到源码目录
           cp ../.config .config
 
       - name: 安装编译依赖 (官方标准脚本，避开系统坑)
-        run: |
+运行: |
           cd openwrt
-          # 🔥 关键：使用 OpenWrt 官方脚本安装专属依赖，替代 apt-get
+# 关键：使用 OpenWrt 官方脚本安装专属依赖，替代 apt-get
           sudo ./scripts/ext-depends.sh
           # 修复缺失的 Python 工具，强制安装 setuptools
           sudo apt-get update -y
           sudo apt-get install -y python3-setuptools python3-distutils
 
-      - name: 更新 & 安装 Feeds
-        run: |
+- 名称：更新与安装 Feeds
+运行: |
           cd openwrt
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
       - name: 预下载依赖包
-        run: |
+运行: |
           cd openwrt
           make -j$(nproc) defconfig
           make -j$(nproc) download
 
       - name: 开始编译固件
-        run: |
+运行: |
           cd openwrt
           make -j$(nproc) V=s
 
