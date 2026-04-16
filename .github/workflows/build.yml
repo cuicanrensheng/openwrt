@@ -1,59 +1,57 @@
-name: 为MiWiFi R4AC编译OpenWrt
+name: Build OpenWrt for MiWiFi R4AC
 
-于:
-工作流_dispatch:
-输入:
-修订版:
-描述: '固件版本'
-必填: 是
-默认: '24.10'
+on:
+  workflow_dispatch:
+    inputs:
+      REVISION:
+        description: '固件版本号'
+        required: true
+        default: '24.10'
 
-作业:
-构建-openwrt:
-运行于: ubuntu-latest
-步骤:
-      - 名称: 检出源码
-使用: actions/checkout@v4
-使用:
+jobs:
+  build-openwrt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出当前仓库
+        uses: actions/checkout@v4
+        with:
           fetch-depth: 0
 
-      - 名称: 拉取OpenWrt官方源码（24.10稳定版）
-运行: |
+      - name: 拉取OpenWrt官方源码 (24.10稳定版)
+        run: |
           # 拉取官方源码
-git 克隆 https://github.com/openwrt/openwrt.git
+          git clone --branch=openwrt-24.10 https://github.com/openwrt/openwrt.git openwrt
           cd openwrt
-         
-          
-# 将你的自定义.config复制到源码目录
+          # 将你的自定义.config复制到源码目录
           cp ../.config .config
 
-      - name: 安装编译依赖 (官方标准脚本，避开系统坑)
-运行: |
+      - name: 安装编译依赖 (官方标准脚本)
+        run: |
           cd openwrt
-# 关键：使用 OpenWrt 官方脚本安装专属依赖，替代 apt-get
+          # 关键: 使用OpenWrt官方脚本安装专属依赖
           sudo ./scripts/ext-depends.sh
-          # 修复缺失的 Python 工具，强制安装 setuptools
+          # 修复Python工具
           sudo apt-get update -y
-          sudo apt-get install -y python3-setuptools python3-distutils
+          sudo apt-get install -y python3-setuptools
 
-- 名称：更新与安装 Feeds
-运行: |
+      - name: 更新与安装Feeds
+        run: |
           cd openwrt
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: 预下载依赖包
-运行: |
+      - name: 预下载所有依赖包
+        run: |
           cd openwrt
           make -j$(nproc) defconfig
           make -j$(nproc) download
 
       - name: 开始编译固件
-运行: |
+        run: |
           cd openwrt
           make -j$(nproc) V=s
 
-      - name: 上传固件
+      - name: 上传编译好的固件
         uses: actions/upload-artifact@v4
         with:
           name: OpenWrt-MiWiFi-R4AC
