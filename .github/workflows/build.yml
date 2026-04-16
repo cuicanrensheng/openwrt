@@ -20,8 +20,9 @@ jobs:
       - name: 拉取 OpenWrt 官方源码 (24.10 稳定版)
         run: |
           # 拉取官方源码
-          git clone --branch=openwrt-24.10 https://github.com/openwrt/openwrt.git openwrt
+          git clone https://github.com/openwrt/openwrt.git     
           cd openwrt
+          git checkout openwrt-24.10 
           
           # 复制你的自定义.config 到源码目录
           cp ../.config .config
