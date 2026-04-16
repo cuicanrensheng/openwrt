@@ -1,0 +1,41 @@
+name: Build ImmortalWrt for MiWiFi R4AC
+
+on:
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      REVISION:
+        description: '固件版本号'
+        required: true
+        default: '1.0'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # 使用GitHub官方Ubuntu环境
+    steps:
+      - name: 拉取源码
+        uses: actions/checkout@v4
+
+      - name: 执行编译
+        uses: immortalwrt/immortalwrt-action@main
+        with:
+          # 小米 R4AC 百兆版 硬件参数（绝对不能错）
+          target: ramips
+          subtarget: mt7620a
+          device: miwifi_r4ac
+          revision: ${{ inputs.REVISION }}
+          # 软件源（自动拉取，无需修改）
+          feeds: |
+            src-git packages https://github.com/immortalwrt/packages.git
+            src-git luci https://github.com/immortalwrt/luci.git
+            src-git routing https://github.com/openwrt/routing.git
+          # 编译配置文件（根目录的.config）
+          config_file: .config
+          # 并行编译核心数（自动适配服务器）
+          compile_jobs: '-j$(nproc)'
+
+      - name: 上传固件
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-miwifi_r4ac
+          # 固件输出路径（编译后自动生成，无需手动创建）
+          path: bin/targets/ramips/mt7620a/*-miwifi_r4ac-*.bin
