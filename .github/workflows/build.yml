@@ -1,56 +1,58 @@
 name: Build OpenWrt for MiWiFi R4AC
 
-# 允许手动触发编译
 on:
   workflow_dispatch:
     inputs:
       REVISION:
-        description: '固件版本号'
+        description: 'Firmware Version'
         required: true
-        default: '1.0'
+        default: '24.10'
 
 jobs:
   build-openwrt:
     runs-on: ubuntu-latest
     steps:
-      - name: 检出当前仓库（用于读取你的.config）
+      - name: 检出源码
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 安装编译依赖（OpenWrt 官方要求）
+      - name: 拉取 OpenWrt 官方源码 (24.10 稳定版)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential file git libncurses5-dev libncursesw5-dev \
-            zlib1g-dev gawk gettext unzip libssl-dev xsltproc wget curl python3-distutils
-
-      - name: 拉取 OpenWrt 官方源码（24.10 稳定版）
-        run: |
-          git clone --depth=1 --branch=openwrt-24.10 https://github.com/openwrt/openwrt.git openwrt
+          # 拉取官方源码
+          git clone --branch=openwrt-24.10 https://github.com/openwrt/openwrt.git openwrt
           cd openwrt
+          
+          # 复制你的自定义.config 到源码目录
+          cp ../.config .config
 
-      - name: 更新并安装软件源（feeds）
+      - name: 安装编译依赖 (官方标准脚本，避开系统坑)
+        run: |
+          cd openwrt
+          # 🔥 关键：使用 OpenWrt 官方脚本安装专属依赖，替代 apt-get
+          sudo ./scripts/ext-depends.sh
+          # 修复缺失的 Python 工具，强制安装 setuptools
+          sudo apt-get update -y
+          sudo apt-get install -y python3-setuptools python3-distutils
+
+      - name: 更新 & 安装 Feeds
         run: |
           cd openwrt
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: 复制你的自定义.config 配置
-        run: |
-          cp ../.config openwrt/.config
-
-      - name: 预下载所有依赖包（避免编译中断）
+      - name: 预下载依赖包
         run: |
           cd openwrt
           make -j$(nproc) defconfig
           make -j$(nproc) download
 
-      - name: 开始编译固件（100% 官方流程）
+      - name: 开始编译固件
         run: |
           cd openwrt
           make -j$(nproc) V=s
 
-      - name: 上传编译好的固件
+      - name: 上传固件
         uses: actions/upload-artifact@v4
         with:
           name: OpenWrt-MiWiFi-R4AC
