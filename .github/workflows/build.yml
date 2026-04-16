@@ -1,4 +1,4 @@
-name: Build OpenWrt for MiWiFi R4AC
+name: Build OpenWrt for MiWiFi R4AC (24.10 稳定版)
 
 on:
   workflow_dispatch:
@@ -17,24 +17,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 拉取OpenWrt官方源码 (24.10稳定版)
+      - name: 安装系统依赖 (官方标准方法)
         run: |
-          # 拉取官方源码
+          # 🔥 关键：使用 Ubuntu 官方命令安装 OpenWrt 编译必须依赖
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential libncurses5-dev libncursesw5-dev zlib1g-dev gawk gettext git-core libssl-dev xsltproc unzip
+
+      - name: 拉取 OpenWrt 官方源码 (24.10稳定版)
+        run: |
           git clone --branch=openwrt-24.10 https://github.com/openwrt/openwrt.git openwrt
           cd openwrt
-          # 将你的自定义.config复制到源码目录
+          # 复制你的自定义.config 到源码目录
           cp ../.config .config
 
-      - name: 安装编译依赖 (官方标准脚本)
-        run: |
-          cd openwrt
-          # 关键: 使用OpenWrt官方脚本安装专属依赖
-          sudo ./scripts/ext-depends.sh
-          # 修复Python工具
-          sudo apt-get update -y
-          sudo apt-get install -y python3-setuptools
-
-      - name: 更新与安装Feeds
+      - name: 更新与安装 Feeds
         run: |
           cd openwrt
           ./scripts/feeds update -a
@@ -51,9 +47,9 @@ jobs:
           cd openwrt
           make -j$(nproc) V=s
 
-      - name: 上传编译好的固件
+      - name: 上传固件
         uses: actions/upload-artifact@v4
         with:
-          name: OpenWrt-MiWiFi-R4AC
+          name: OpenWrt-MiWiFi-R4AC-24.10
           path: openwrt/bin/targets/ramips/mt7620a/*-miwifi_r4ac-*-squashfs-sysupgrade.bin
           retention-days: 30
